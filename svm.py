@@ -1,115 +1,69 @@
- #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Apr  5 11:44:11 2018
+# Logistic Regression
 
-@author: shirley
-"""
-
-# support vector machine
-
-# import the lib
+# Importing the libraries
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.metrics import accuracy_score
 
-dataset = pd.read_csv('/Users/shirley/Desktop/voice_Kaggle.csv')
-print("Total number of samples: {}".format(dataset.shape[0]))
-print("Total number of male: {}".format(dataset[dataset.label == 'male'].shape[0]))
-print("Total number of female: {}".format(dataset[dataset.label == 'female'].shape[0]))
-print("Correlation between each feature")
-print(dataset.corr())
+# Importing the dataset
+dataset = pd.read_csv('/Users/shirley/Desktop/Social_Network_Ads.csv')
+X = dataset.iloc[:, [2, 3]].values
+y = dataset.iloc[:, 4].values
 
-x= dataset.iloc[:,0:-1]
-y= dataset.iloc[:,-1]
-
-# splitting the dataset into the Training set and Test set
+# Splitting the dataset into the Training set and Test set
 from sklearn.cross_validation import train_test_split
-x_train, x_test, y_train, y_test = train_test_split(x,y,test_size=0.2, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
 
-#svm with default parameter without scaling
-from sklearn.svm import SVC
-from sklearn import metrics
-sc=SVC()
-sc.fit(x_train, y_train)
-prediction = sc.predict(x_test)
-print('Accuracy for default parameter without scaling')
-print(metrics.accuracy_score(y_test,prediction))
-
-#svm with linear kernel without scaling
-from sklearn.svm import SVC
-from sklearn import metrics
-sc=SVC(kernel = 'linear')
-sc.fit(x_train, y_train)
-prediction = sc.predict(x_test)
-print('Accuracy for svm with Linear kernel without scaling')
-print(metrics.accuracy_score(y_test,prediction))
-
-#svm with rbf kernel without scaling
-from sklearn.svm import SVC
-from sklearn import metrics
-sc=SVC(kernel = 'rbf')
-sc.fit(x_train, y_train)
-prediction = sc.predict(x_test)
-print('Accuracy for svm with RBF kernel without scaling')
-print(metrics.accuracy_score(y_test,prediction))
-
-# scaling
+# Feature Scaling
 from sklearn.preprocessing import StandardScaler
 sc = StandardScaler()
-x_train = sc.fit_transform(x_train)
-x_test = sc.transform(x_test)
+X_train = sc.fit_transform(X_train)
+X_test = sc.transform(X_test)
 
-# fitting svm to the training set
-from sklearn.svm import SVC
-print('Linear Kernel after scaling')
-classifier = SVC(kernel = 'linear', random_state = 0)
-classifier.fit(x_train, y_train)
-prediction = classifier.predict(x_train)
-print('Accuracy in training samples for SVM: ',  accuracy_score(y_train,prediction))
-prediction2 = classifier.predict(x_test)
-print('Accuracy in testing samples for SVM: ', accuracy_score(y_test, prediction2))
+# Fitting Logistic Regression to the Training set
+from sklearn.linear_model import LogisticRegression
+classifier = LogisticRegression(random_state = 0)
+classifier.fit(X_train, y_train)
 
+# Predicting the Test set results
+y_pred = classifier.predict(X_test)
 
-print('RBF Kernel')
-classifier = SVC(kernel='rbf', random_state = 0)
-classifier.fit(x_train, y_train)
-prediction = classifier.predict(x_test)
-print('Accuracy in testing samples for SVM: ', accuracy_score(y_test, prediction))
-prediction2 = classifier.predict(x_test)
-print('Accuracy in testing samples for SVM: ', accuracy_score(y_test, prediction2))
+# Making the Confusion Matrix
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y_test, y_pred)
 
-print('Polynomial Kernel')
-classifier = SVC(kernel= 'poly' , random_state = 0)
-classifier.fit(x_train, y_train)
-prediction = classifier.predict(x_test)
-print('Accuracy in testing samples for SVM: ', accuracy_score(y_test, prediction))
-prediction2 = classifier.predict(x_test)
-print('Accuracy in testing samples for SVM: ', accuracy_score(y_test, prediction2))
-
-# virtualizing training set results
+# Visualising the Training set results
 from matplotlib.colors import ListedColormap
-x_set = x_train
-y_set = y_train
+X_set, y_set = X_train, y_train
+X1, X2 = np.meshgrid(np.arange(start = X_set[:, 0].min() - 1, stop = X_set[:, 0].max() + 1, step = 0.01),
+                     np.arange(start = X_set[:, 1].min() - 1, stop = X_set[:, 1].max() + 1, step = 0.01))
+plt.contourf(X1, X2, classifier.predict(np.array([X1.ravel(), X2.ravel()]).T).reshape(X1.shape),
+             alpha = 0.75, cmap = ListedColormap(('red', 'green')))
+plt.xlim(X1.min(), X1.max())
+plt.ylim(X2.min(), X2.max())
+for i, j in enumerate(np.unique(y_set)):
+    plt.scatter(X_set[y_set == j, 0], X_set[y_set == j, 1],
+                c = ListedColormap(('red', 'green'))(i), label = j)
+plt.title('Logistic Regression (Training set)')
+plt.xlabel('Age')
+plt.ylabel('Estimated Salary')
+plt.legend()
+plt.show()
 
-# Linear kernel with different C values
-from sklearn.model_selection import train_test_split, cross_val_score
-
-def linear_c(x_train, y_train, c):
-    accurancy = []
-    for i in c:
-        sc = SVC(kernel='linear', C=i)
-        scores = cross_val_score(sc, x_train, y_train, cv=10, scoring='accuracy')
-        accurancy.append(scores.mean())
-        print("When the C value is: %d then the accurancy is: %f" % (i, scores.mean()))
-
-    plt.plot(c, accurancy)
-    plt.xlabel('Differnet C Values')
-    plt.ylabel('Cross-Validated Accuracy')
-    plt.show()
-
-c_values = list(np.arange(1, 16))
-
-linear_c(x_train, y_train, c_values)
-
+# Visualising the Test set results
+from matplotlib.colors import ListedColormap
+X_set, y_set = X_test, y_test
+X1, X2 = np.meshgrid(np.arange(start = X_set[:, 0].min() - 1, stop = X_set[:, 0].max() + 1, step = 0.01),
+                     np.arange(start = X_set[:, 1].min() - 1, stop = X_set[:, 1].max() + 1, step = 0.01))
+plt.contourf(X1, X2, classifier.predict(np.array([X1.ravel(), X2.ravel()]).T).reshape(X1.shape),
+             alpha = 0.75, cmap = ListedColormap(('red', 'green')))
+plt.xlim(X1.min(), X1.max())
+plt.ylim(X2.min(), X2.max())
+for i, j in enumerate(np.unique(y_set)):
+    plt.scatter(X_set[y_set == j, 0], X_set[y_set == j, 1],
+                c = ListedColormap(('red', 'green'))(i), label = j)
+plt.title('Logistic Regression (Test set)')
+plt.xlabel('Age')
+plt.ylabel('Estimated Salary')
+plt.legend()
+plt.show()
